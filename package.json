@@ -1,0 +1,29 @@
+{
+  "name": "game-jam",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "webpack",
+    "start": "webpack-dev-server --port 8080"
+  },
+  "devDependencies": {
+    "@babylonjs/core": "^4.1.0",
+    "@babylonjs/inspector": "^4.1.0",
+    "clean-webpack-plugin": "^3.0.0",
+    "html-webpack-plugin": "^4.5.0",
+    "ts-loader": "^8.0.4",
+    "typescript": "^4.0.3",
+    "webpack": "^4.44.2",
+    "webpack-cli": "^3.3.12",
+    "webpack-dev-server": "^3.11.0"
+  },
+  "resolutions": {
+    "graceful-fs": "^4.2.4"
+  },
+  "dependencies": {
+    "babylonjs": "^4.1.0",
+    "babylonjs-charactercontroller": "^0.4.3",
+    "earcut": "^2.2.2"
+  }
+}
