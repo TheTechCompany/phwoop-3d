@@ -34,9 +34,6 @@ module.exports = {
             inject: true,
             template: path.resolve(appDirectory, "public/index.html")
         }),
-        new Webpack.ProvidePlugin({
-            'earcut': 'earcut'
-        }),
         new CleanWebpackPlugin()
     ],
     mode: "development"

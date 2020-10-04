@@ -1,0 +1,29 @@
+body {
+    margin: 0;
+    display: flex;
+}
+
+@media only screen and (max-width: 600px){
+    .signup-container{
+        flex-direction: column;
+
+    }
+
+    .character-opt > img{
+        width: 50%;
+    }
+}
+
+.signup-container{
+    display: flex;
+    flex: 1;
+}
+
+.character-opt{
+    flex: 1;
+    margin: 12px;
+}
+
+.character-opt img{
+    width: 100%;
+}

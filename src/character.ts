@@ -12,6 +12,8 @@ export class Character{
     private _run: AnimationGroup;
     private _idle: AnimationGroup;
     private _jump: AnimationGroup;
+    private _strafeLeft: AnimationGroup;
+    private _strafeRight: AnimationGroup;
     private _turnLeft: AnimationGroup;
     private _turnRight: AnimationGroup;
     private _land: AnimationGroup;
@@ -20,6 +22,8 @@ export class Character{
     constructor(assets, scene: Scene){
         this._scene = scene;
         this._player = assets.mesh;
+        this._player.normalizeToUnitCube()
+        this._player.scaling.scaleInPlace(2)
 
         this._player.rotation = this._player.rotationQuaternion.toEulerAngles();
         this._player.rotationQuaternion = null;
@@ -42,18 +46,22 @@ export class Character{
         this._camera.upperRadiusLimit = 20;
         this._camera.attachControl(scene.getEngine().getRenderingCanvas(), false);
 
-        this._jump = assets.animationGroups.filter((a) => a.name == "jump")[0]
+        this._jump = assets.animationGroups.filter((a) => a.name == "Jump")[0]
         this._walk = assets.animationGroups.filter((a) => a.name == "Walking")[0]
-        this._idle = assets.animationGroups.filter((a) => a.name == "OldIdle")[0]
+        this._idle = assets.animationGroups.filter((a) => a.name == "Idle")[0]
         this._run = assets.animationGroups.filter((a) => a.name =="Running")[0]
-        this._turnLeft = assets.animationGroups.filter((a) => a.name=="turnLeft")[0]
-        this._turnRight = assets.animationGroups.filter((a) => a.name=="turnRight")[0]
+        this._strafeLeft = assets.animationGroups.filter((a) => a.name =="Leftstrafe")[0]
+        this._strafeRight = assets.animationGroups.filter((a) => a.name == "Rightstrafe")[0]
+        this._turnLeft = assets.animationGroups.filter((a) => a.name=="Leftturn")[0]
+        this._turnRight = assets.animationGroups.filter((a) => a.name=="Rightturn")[0]
 
         const animations = {
             "walk": this._walk,
             "run": this._run,
             "idle": this._idle,
             "idleJump": this._jump,
+            "strafeLeft": this._strafeLeft,
+            "strafeRight": this._strafeRight,
             "turnLeft": this._turnLeft,
             "turnRight": this._turnRight
         }
@@ -65,9 +73,9 @@ export class Character{
         this._controller.setMode(0);
         this._controller.setTurnSpeed(90);
 
-        this._controller.setCameraTarget(new Vector3(0, 1.5, 0));
-
-        this._controller.setNoFirstPerson(false);
+        this._controller.setCameraTarget(new Vector3(0, 1, 0));
+        this._controller.setWalkSpeed(7);
+        this._controller.setNoFirstPerson(true);
         this._controller.setStepOffset(0.4);
         this._controller.setSlopeLimit(30, 60);
 

@@ -4,6 +4,9 @@
     "module": "commonjs",
     "noResolve": false,
     "noImplicitAny": false,
+    "allowJs": true,
+    "maxNodeModuleJsDepth": 1,
+    "esModuleInterop": true,
     "sourceMap": true,
     "preserveConstEnums": true,
     "lib": [

@@ -5,11 +5,16 @@
   "license": "MIT",
   "scripts": {
     "build": "webpack",
-    "start": "webpack-dev-server --port 8080"
+    "start": "webpack-dev-server --port 8081"
   },
   "devDependencies": {
-    "@babylonjs/core": "^4.1.0",
+    "@babylonjs/core": "4.1.0",
     "@babylonjs/inspector": "^4.1.0",
+    "@babylonjs/loaders": "^4.1.0",
+    "@babylonjs/materials": "^4.1.0",
+    "@babylonjs/serializers": "^4.1.0",
+    "@types/react": "16.7.3",
+    "@types/react-dom": "16.0.9",
     "clean-webpack-plugin": "^3.0.0",
     "html-webpack-plugin": "^4.5.0",
     "ts-loader": "^8.0.4",
@@ -24,6 +29,7 @@
   "dependencies": {
     "babylonjs": "^4.1.0",
     "babylonjs-charactercontroller": "^0.4.3",
-    "earcut": "^2.2.2"
+    "earcut": "^2.2.2",
+    "ipfs": "^0.50.2"
   }
 }

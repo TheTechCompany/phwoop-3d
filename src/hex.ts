@@ -2,7 +2,7 @@ import { Color3, Mesh, MeshBuilder, Scene, StandardMaterial, Vector3 } from "@ba
 
 export class HexTile{
     private _scene : Scene;
-    private _hex: Mesh;
+    public _hex: Mesh;
     private _x : number;
     private _y : number;
     
@@ -36,13 +36,13 @@ export class HexTile{
         let x = this._x * (height * (3/4))
         let y = this._y * width
 
+        let material = new StandardMaterial("Hex", this._scene)
+        material.specularPower = 0;
         if(this._x % 2 == 0){
             y =  y - ((Math.sqrt(3) * size) / 2);
-            let material = new StandardMaterial("Purple", this._scene);
             material.diffuseColor = Color3.Purple();
             this._hex.material = material;
         }else{
-            let material = new StandardMaterial("Green", this._scene);
             material.diffuseColor = Color3.Green();
             this._hex.material = material;
         }
@@ -52,4 +52,6 @@ export class HexTile{
 
         //MeshBuilder.CreateBox("box", {depth: 24, width: 24, height: 0.2}, this._scene)
     }
+
+
 }
