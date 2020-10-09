@@ -18,7 +18,6 @@ import {
   Mesh, 
   MeshBuilder, DirectionalLight } from "@babylonjs/core";
   import {HexTile} from './hex';
-import { PlayerInput } from './inputController';
 import { Player } from './characterController';
 import { Environment } from './environment';
 import { Hud } from "./ui";
@@ -26,15 +25,21 @@ import { Character } from "./character";
 import IPFS from 'ipfs';
 import { IPFSModelLoader } from "./ipfsModel";
 import { CharacterSelector } from "./signup/characterSelector";
+import { getCollections, getModels } from './api/modelCollections';
+import BaseEngine from "./base/engine";
+import { ModelEngine } from "./models/modelengine";
+import { addModelToPrefab, getPrefab } from './api/prefabActions';
+import Prefab from './base/prefab';
 
 enum State { START = 0, GAME = 1, LOSE = 2, CUTSCENE = 3 };
 
 class App{
   
+  private _baseEngine: BaseEngine;
+
   private _ui: Hud;
   private _ipfs;
   private _ipfsModelLoader: IPFSModelLoader;
-  private _input: PlayerInput;
   private _scene: Scene;
   private _canvas: HTMLCanvasElement;
   private _engine: Engine;
@@ -47,10 +52,42 @@ class App{
 
   private characterCid;
 
+  private _mouseX;
+  private _mouseY;
+  private _buildingMode: boolean = false;
+
+
+  private _modelEngine: ModelEngine;
+
+  private _modelCollections = [];
+  private _models = [];
+  private _activeModel = 0;
+
+  private _currentHeight = 0;
+  private _currentScale = 3;
+  private _currentRotation = 0;
+
+  private _prefab;
+
   constructor(){
 
     let characterSelector = new CharacterSelector(this._loadCharacter.bind(this));
     characterSelector.mount()
+
+    getCollections().then((collections) => {
+      this._modelCollections = collections;
+      let collection = this._modelCollections.filter((a) => a.name == "Fantasy Town Kit")[0];
+      if(collection){
+        getModels(collection._id).then((models) => {
+            this._models = models.items;
+
+            getPrefab().then((r) => {
+              this._prefab = r;
+            })
+        })
+      }
+    })
+    
   }
 
   private _loadCharacter(id){
@@ -58,20 +95,33 @@ class App{
     this._goToGame()
   }
 
+  private placedObject = null;
+
   private async _goToGame(){
-    var canvas = this._createCanvas();
-    
-    const _engine = new Engine(canvas, true);
-    this._engine = _engine;
-    this._scene = new Scene(this._engine);
 
+    this._baseEngine = new BaseEngine();
+
+    this._engine = this._baseEngine._engine;
+    this._canvas = this._baseEngine._canvas;
+    this._scene = this._baseEngine._scene;
+
+    this._engine.displayLoadingUI()
+
+    this._ui = new Hud(this._scene)
+    
+    //Setup lights
+    var light1: HemisphericLight = new HemisphericLight("light1", new Vector3(1, 33, 0), this._scene);  
+
+    //Setup camera
     var camera: ArcRotateCamera = new ArcRotateCamera("Camera", Math.PI / 2, Math.PI / 2, 2, Vector3.Zero(), this._scene);
-    camera.attachControl(canvas, true);
+    camera.attachControl(this._canvas, true);
 
-    //var light = new DirectionalLight("DirectionalLight", newVector3(0, -1, 0), this._scene);
-
-    var light1: HemisphericLight = new HemisphericLight("light1", new Vector3(1, 33, 0), this._scene);
-    
+    //Setup action
+    const environment = new Environment(this._scene, 12, 12)
+    this._enviroment = environment;
+    await this._enviroment.load();
+ 
+    //Debug layer controls
     window.addEventListener('keydown', (ev) => {
       if(ev.shiftKey && ev.ctrlKey && ev.altKey && ev.keyCode == 73){
         if(this._scene.debugLayer.isVisible()){
@@ -85,145 +135,162 @@ class App{
     await this._setUpIPFS();
     await this._setUpGame();
 
-    this._engine.runRenderLoop(() => {
-      this._scene.render();
-    })
 
-    canvas.focus();
-    window.addEventListener("resize", function () {
-      _engine.resize();
-    });
+
+    this._canvas.focus();
+
+    let p = new Prefab(this._scene, this._modelEngine, this._prefab);
+
+    p.build();
+    
+
   }
 
   private async _setUpIPFS(){
-    this._ipfs = await IPFS.create()
+    this._ipfs = await IPFS.create({
+      config: {
+        Addresses: {
+        }
+      }
+    })
     console.log("IPFS", this._ipfs);
     this._ipfsModelLoader = new IPFSModelLoader(this._ipfs)
   }
 
   private async _setUpGame(){
-    //let scene = new Scene(this._engine);
-    //this._scene = scene;
-    
     let scene = this._scene
 
-    const environment = new Environment(scene, 12, 12)
-    this._enviroment = environment;
+    this._modelEngine = new ModelEngine(this._scene, this._ipfsModelLoader)
 
-    
-    await this._enviroment.load();
-
+  
     await this._loadCharacterAssets(scene, this.characterCid);
     
-    await this._initGround(scene)
     await this._initPlayer(scene)
-   // const hex = new HexTile(scene, 13)
+
+    this._engine.hideLoadingUI()
+    this._baseEngine.mount();
+   
+   
   }
 
-  private async _initGround(scene){
-    let tile = this._enviroment.getTile(0, 1)
-
-    let tile2 = this._enviroment.getTile(1, 1);
-
-    let carTile = this._enviroment.getTile(1, 0);
-
-    let schoolTile = this._enviroment.getTile(0, 2);
-    let getPos = (index, face = 1) => new Vector3((11 - (index * 1.15)), 0, (2 * (index+1)) * face)
-
-    let nextTile = this._enviroment.getTile(2, 0);
-    
-    await this._ipfsModelLoader.getSTLModel("QmP1DeXeTWgcbNh6bDZx6CXY8ErFeRoHnKi7QhBjoq9KRD", this._scene, Vector3.Zero())
-
-    /*await this._ipfsModelLoader.getModel(nextTile._hex, "QmWdi2RHoNJcTp2uMsS2KmpgC9eB558odJJ2KdtS1qiiu5", this._scene, new Vector3(0, 0, 0))
-
-    await this._ipfsModelLoader.getModel(carTile._hex, "QmZK2FyPQti52uMRwNwNviQ2xL27YomHSRmu9D282Jfnu5", this._scene, new Vector3(0, 0, 0), 7)
-
-    //School
-    await this._ipfsModelLoader.getModel(schoolTile._hex, "QmRqxXVMjkZWBt7mUCiDLvcBQ3AeZiR6rWFiWMypSTNssc", this._scene, new Vector3(0, 0, 0), 13)
-
-    //Bed
-    await this._ipfsModelLoader.getModel(tile2._hex, "QmV1DWu78pgb2mz3T5xTvsuwVcnccRnpivz7mfQ86y7jws", this._scene, new Vector3(0, 0, 0), 7);
-    await this._ipfsModelLoader.getModel(tile2._hex, "QmREprb3EZ3YFBhhCL4dTwFik7G954x7c2fbhhL9Nwogae", this._scene, getPos(1), 2, new Vector3(0, 60 * (Math.PI / 180), 0))
-    await this._ipfsModelLoader.getModel(tile2._hex, "QmREprb3EZ3YFBhhCL4dTwFik7G954x7c2fbhhL9Nwogae", this._scene, getPos(2), 2, new Vector3(0, 60 * (Math.PI / 180), 0))
-
-    
-    //Pagoda Sun Tile
-    await this._ipfsModelLoader.getModel(tile._hex, "QmNY7eDuFTTxwv3zyfSfoLykctEuZNC4T43zru8WqFXnQo", this._scene, new Vector3(0, 0, 0), 18) //Pagoda
-
-    await this._ipfsModelLoader.getModel(tile._hex, "QmZ8JbrJh4QFxHMqrEGF5UenRueFbTkDUscntvp16YWPEs", this._scene, getPos(1), 2, new Vector3(0, 329.5 * (Math.PI / 180), 0)) // Solar Panel
-    await this._ipfsModelLoader.getModel(tile._hex, "QmZ8JbrJh4QFxHMqrEGF5UenRueFbTkDUscntvp16YWPEs", this._scene, getPos(2), 2, new Vector3(0, 329.5 * (Math.PI / 180), 0)) // Solar Panel
-    await this._ipfsModelLoader.getModel(tile._hex, "QmZ8JbrJh4QFxHMqrEGF5UenRueFbTkDUscntvp16YWPEs", this._scene, getPos(3), 2, new Vector3(0, 329.5 * (Math.PI / 180), 0)) // Solar Panel
-
-    await this._ipfsModelLoader.getModel(tile._hex, "QmZ8JbrJh4QFxHMqrEGF5UenRueFbTkDUscntvp16YWPEs", this._scene, getPos(1, -1), 2, new Vector3(0, -(329.5 * (Math.PI / 180)), 0)) // Solar Panel
-    await this._ipfsModelLoader.getModel(tile._hex, "QmZ8JbrJh4QFxHMqrEGF5UenRueFbTkDUscntvp16YWPEs", this._scene, getPos(2, -1), 2, new Vector3(0, -(329.5 * (Math.PI / 180)), 0)) // Solar Panel
-    await this._ipfsModelLoader.getModel(tile._hex, "QmZ8JbrJh4QFxHMqrEGF5UenRueFbTkDUscntvp16YWPEs", this._scene, getPos(3, -1), 2, new Vector3(0, -(329.5 * (Math.PI / 180)), 0)) // Solar Panel
-    */
-  }
 
   private async _initPlayer(scene): Promise<void>{
 
-    this._player = new Character(this.assets, scene);
+    this._player = new Character(this.assets, scene, this._ipfsModelLoader);
+        //Builder Controls
+        window.addEventListener('click', (e) => {
+          if(this._buildingMode){
+            this.buildingObject.isPickable = false;
+            addModelToPrefab(this._models[this._activeModel]._id, this.buildingObject.position, this.buildingObject.rotation, this._currentScale).then((r) => {
+              console.log("Model update", r)
+            })
+            this.initBuildingModel()
+          }
+        })
 
+        window.addEventListener('mousemove', (e) => {
+          console.log("Moving mouse")
+            this._mouseX = e.clientX
+            this._mouseY = e.clientY
+
+            if(this.buildingObject){
+              let ray = scene.pick(this._mouseX, this._mouseY);
+              this.buildingObject.position = new Vector3(ray.pickedPoint.x.toFixed(1), this._currentHeight * this._currentScale, ray.pickedPoint.z.toFixed(1));
+            }
+        })
+
+        window.addEventListener('keydown', (e) => {
+          console.log(e.key, e.keyCode)
+            if(e.key == 'b'){
+                this._buildingMode = !this._buildingMode;
+                this.updateUI()
+                if(this._buildingMode){
+                  this.initBuildingModel()
+                }else{
+                  this.deinitBuildingModel()
+                }
+
+            }else if(e.key == 'n'){
+              if(this._activeModel < this._models.length){
+                this._activeModel += 1
+              }
+              this.deinitBuildingModel()
+              this.initBuildingModel()
+              this.updateUI()
+            }else if(e.key == 'p'){
+              if(this._activeModel > 0){
+                this._activeModel -= 1;
+              }
+              this.deinitBuildingModel()
+              this.initBuildingModel()
+              this.updateUI()
+            }else if(e.key == 'r'){
+              if(this._buildingMode){
+                this._currentRotation += 90;
+                this.buildingObject.rotation = new Vector3(0, this._currentRotation * Math.PI / 180, 0);
+              }
+            }else if(e.key == '<'){
+              this._currentScale -= 1;
+              this.buildingObject.scaling = new Vector3(this._currentScale, this._currentScale, this._currentScale);
+            }else if(e.key == '>'){
+              this._currentScale += 1;
+              this.buildingObject.scaling = new Vector3(this._currentScale, this._currentScale, this._currentScale);
+            }else if(e.key == '{'){
+              this._currentHeight -= 1;
+              this.buildingObject.position.y = this._currentScale * this._currentHeight;
+            }else if(e.key == '}'){
+              this._currentHeight += 1;
+              this.buildingObject.position.y = this._currentScale * this._currentHeight;
+            }
+        })
    // const camera = this._player.activatePlayerCamera();
     
   }
 
-  private _createCanvas(){
-    document.documentElement.style["overflow"] = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    document.documentElement.style.width = "100%";
-    document.documentElement.style.height = "100%";
-    document.documentElement.style.margin = "0";
-    document.documentElement.style.padding = "0";
-    document.body.style.overflow = "hidden";
-    document.body.style.width = "100%";
-    document.body.style.height = "100%";
-    document.body.style.margin = "0";
-    document.body.style.padding = "0";
 
-    this._canvas = document.createElement('canvas');
-    this._canvas.style.width = '100%';
-    this._canvas.style.height = '100%';
-    this._canvas.id = 'gameCanvas';
+  private updateUI(){
+    this._ui._clockTime.text = this._buildingMode ? "Build Mode: " + this._models[this._activeModel].name : "";
 
-    document.body.appendChild(this._canvas);
-    return this._canvas;
   }
 
-  private async _goToStart(){
-    this._engine.displayLoadingUI();
+  private buildingObject : Mesh;
 
-    this._scene.detachControl();
+  private initBuildingModel() {
+    let pickedPoint = this._scene.pick(this._mouseX, this._mouseY);
+    this._modelEngine.instanceModel(this._models[this._activeModel].ipfs, (err, model) => {
 
-    let scene = new Scene(this._engine);
-
-    scene.clearColor = new Color4(0, 0, 0, 1);
-
-    let camera = new FreeCamera("camera1", new Vector3(0, 0, 0), scene);
-    camera.setTarget(Vector3.Zero());
-
-    await scene.whenReadyAsync();
-    this._engine.hideLoadingUI();
-
-    this._scene.dispose();
-    this._scene = scene;
-    this._state = State.START;
+      this.buildingObject = model;
+      this.buildingObject.isPickable = false;
+      this.buildingObject.position = new Vector3(pickedPoint.pickedPoint.x, this._currentHeight * this._currentScale, pickedPoint.pickedPoint.z)
+      this.buildingObject.scaling = new Vector3(this._currentScale, this._currentScale, this._currentScale);
+      this.buildingObject.rotation = new Vector3(0, this._currentRotation * Math.PI / 180, 0)
+      //this._scene.addMesh(model)
+    })
+    //this._ipfsModelLoader.getModel(null, this._models[this._activeModel].ipfs, this._scene, new Vector3(pickedPoint.pickedPoint.x, 0, pickedPoint.pickedPoint.z), 3);
   }
+
+  private deinitBuildingModel(){
+    this.buildingObject.dispose()
+  }
+
+
 
   private async _loadCharacterAssets(scene, cid): Promise<any> {
     async function loadCharacter(ipfs){
       
       const characterUrl = await ipfs.getIPFSModel(cid)
 
-      const outer = MeshBuilder.CreateBox("outer", {width: 1, depth: 1, height: 1}, scene)
-      outer.isVisible = false;
+      const outer = MeshBuilder.CreateBox("outer", {width: 0.5, depth: 0.5, height: 2}, scene)
+      //outer.isVisible = false;
       outer.isPickable = false;
       outer.checkCollisions = true;
 
-      outer.bakeTransformIntoVertices(Matrix.Translation(0, 1.5, 0))
+      outer.bakeTransformIntoVertices(Matrix.Translation(0.5, 2, 0.5))
 
-      outer.ellipsoid = new Vector3(1, 1.5, 1);
-      outer.ellipsoidOffset = new Vector3(0, 1.5, 0);
+      outer.position = new Vector3(3, 3, 0);
+
+      outer.ellipsoid = new Vector3(0.5, 2, 0.5);
+      outer.ellipsoidOffset = new Vector3(0, 0.9, 0);
 
       outer.rotationQuaternion = new Quaternion(0, 1, 0, 0);
       
@@ -231,16 +298,19 @@ class App{
         const player = result.meshes[0];
         const skeleton = result.skeletons[0];
         
+        //player.scaling = new Vector3(1.5, 1.5, 1.5);
+
         player.skeleton = skeleton
         skeleton.enableBlending(0.1);
-        //player.parent = outer;
-        player.position = new Vector3(0, 20, 0);
+        player.parent = outer;
+        player.isPickable = false;
+        player.position = new Vector3(0, 0, 0);
         player.checkCollisions = true;
         player.ellipsoid = new Vector3(0.5, 2, 0.5);
-        player.ellipsoidOffset = new Vector3(0, 1, 0);
+        player.ellipsoidOffset = new Vector3(0, 0.9, 0);
   
         return {
-          mesh: player as Mesh,
+          mesh: outer as Mesh,
           animationGroups: result.animationGroups
         }
       })

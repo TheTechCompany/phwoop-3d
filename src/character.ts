@@ -1,6 +1,7 @@
 import { AnimationGroup, Camera, UniversalCamera,  } from "@babylonjs/core";
 import {CharacterController} from "babylonjs-charactercontroller";
 import { ArcRotateCamera, Mesh,Vector3, Scene } from 'babylonjs';
+import { IPFSModelLoader } from "./ipfsModel";
 
 export class Character{
     private _controller: CharacterController;
@@ -19,9 +20,13 @@ export class Character{
     private _land: AnimationGroup;
     private _walk: AnimationGroup;
 
-    constructor(assets, scene: Scene){
+    private _ipfs: IPFSModelLoader;
+  
+    constructor(assets, scene: Scene, ipfs: IPFSModelLoader){
         this._scene = scene;
         this._player = assets.mesh;
+        this._ipfs = ipfs;
+
         this._player.normalizeToUnitCube()
         this._player.scaling.scaleInPlace(2)
 
@@ -75,10 +80,13 @@ export class Character{
 
         this._controller.setCameraTarget(new Vector3(0, 1, 0));
         this._controller.setWalkSpeed(7);
-        this._controller.setNoFirstPerson(true);
+        this._controller.setNoFirstPerson(false);
         this._controller.setStepOffset(0.4);
         this._controller.setSlopeLimit(30, 60);
 
+
         this._controller.start()
     }
+
+   
 }

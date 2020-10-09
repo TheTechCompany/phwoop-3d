@@ -13,6 +13,10 @@ export class HexTile{
         this.makeHex(size)
     }
 
+    public getPos (index, face = 1) {
+        new Vector3((11 - (index * 1.15)), 0, (2 * (index+1)) * face)
+    }
+
     private getHex( hexSize: number) {
         let corners = []
         for(var i = 0; i < 6; i++){
@@ -47,6 +51,7 @@ export class HexTile{
             this._hex.material = material;
         }
         this._hex.position = new Vector3(x, 0, y)
+        this._hex.isPickable = true;
         this._hex.freezeWorldMatrix();
         //Mesh.CreatePolygon("hex", corners, this._scene)
 

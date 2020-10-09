@@ -36,10 +36,10 @@ export class IPFSModelLoader{
 
         SceneLoader.LoadAssetContainer("", url, scene, (container) => {
             let rootNode = container.meshes[0];
-            rootNode.checkCollisions = true
+            //rootNode.checkCollisions = true
 
             for(var i = 0; i< container.meshes.length; i++){
-                container.meshes[i].checkCollisions = true;
+               // container.meshes[i].checkCollisions = true;
             }
             
             rootNode.isPickable = false
@@ -58,33 +58,25 @@ export class IPFSModelLoader{
 
     }
 
-    public async getModel(parent: Mesh, cid: string, scene: Scene, position: Vector3, scaling?: number, rotation?: Vector3){
+    public async getModel(cid: string, scene: Scene, cb, checkCollisions?: boolean){
         
         let url = await this.getIPFSModel(cid);
-        SceneLoader.LoadAssetContainer("", url, scene, (container) => {
-            container.meshes[0].checkCollisions = true
+        SceneLoader.ImportMesh(null, "", url, scene, (meshes, particles, skeletons, animationGroups) => {
+            let mesh = meshes[0];
+            mesh.isVisible = false;
+            mesh.isPickable = false;
+            mesh.checkCollisions = checkCollisions;
 
-            for(var i = 0; i < container.meshes.length; i++){
-                container.meshes[i].checkCollisions = true
+            for(var i = 0; i < meshes.length; i++){
+                meshes[i].isPickable = false;
+                meshes[i].isVisible = true;
+                //meshes[i].checkCollisions = checkCollisions
             }
-            container.meshes[0].isPickable = false
-            //container.meshes[0].position = position;
-            //container.addAllToScene();
-
-            scene.addMesh(container.meshes[0], true)
-            let rootNode = new TransformNode(`ipfs-root-${cid}`, scene)
-            if(parent)rootNode.parent = parent
-            rootNode.position = position
-            if(rotation) rootNode.rotation = rotation
-            
-            container.meshes[0].parent = rootNode;
-            
-            rootNode.normalizeToUnitCube()
-            rootNode.scaling.scaleInPlace(scaling || 3)
-
-//            scene.addTransformNode()
-            scene.addTransformNode(rootNode)
-            //rootNode.add
-        }, null, null, ".glb")
+            cb(null, mesh)
+        }, (e) => {
+            //onProgress
+            console.log(e)
+        }, null, ".glb")
+     
     }
 }
