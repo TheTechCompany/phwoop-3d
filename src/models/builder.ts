@@ -1,14 +1,16 @@
-import { Scene, Vector3 } from "@babylonjs/core";
+import { Color3, PointLight, Scene, Vector3 } from "@babylonjs/core";
 import { int } from "babylonjs";
 import { getCollections } from "../api/modelCollections";
+import { addLightToPrefab, addModelToPrefab } from "../api/prefabActions";
 import { Hud } from "../ui";
+import Model from "./model";
 import { ModelEngine } from "./modelengine";
 
 export class Builder {
     
-    private _modelEngine;
-    private _ui;
-    private _scene;
+    private _modelEngine : ModelEngine;
+    private _ui : Hud;
+    private _scene : Scene;
     
     //Mouse coords
     private _mouseX;
@@ -17,9 +19,9 @@ export class Builder {
     private _modelCollections = [];
     private _models = [];
     private _currentCollection;
-    private _activeModel = 1;
+    private _activeModel = 0;
 
-    private _currentHeight = 1;
+    private _currentHeight = 0;
     private _currentScale = 1;
     private _currentRotation = 0;
 
@@ -27,10 +29,15 @@ export class Builder {
     private _rotationStep = 90;
     private _scaleStep = 1;
 
-    private buildingObject;
+    private buildingObject: Model;
+    private light : PointLight;
+
+    public lightMode: boolean = false;
     public buildingMode: boolean = false;
 
     private keyMap = {
+        'Enter': 'PLACE_MODEL',
+        'l': 'LIGHT_MODE',
         'b': 'BUILD_MODE',
         'n': 'NEXT_MODEL',
         'p': 'PREV_MODEL',
@@ -60,20 +67,25 @@ export class Builder {
         })
 
         window.addEventListener('click', this.clickHandler);
-        
-/*            if(this.buildingMode){
-              this.buildingObject.isPickable = false;
-              /*addModelToPrefab(this._models[this._activeModel]._id, this.buildingObject.position, this.buildingObject.rotation, this._currentScale).then((r) => {
-                console.log("Model update", r)
-              })
-              this.initBuildingModel()
-            }*/
-          
-  
         window.addEventListener('mousemove', this.mouseMove);
     
         window.addEventListener('keydown', this.keyDown);
 
+    }
+
+    private placeHandler(): void{
+        if(this.buildingMode){
+            addModelToPrefab(this._models[this._activeModel]._id, this.buildingObject.position, this.buildingObject.rotation, this._currentScale).then((r) => {
+                
+            })
+            this.initBuildingModel()
+        }else if(this.lightMode){
+            console.log("PLACE LIGHT")
+            addLightToPrefab(this.light.position, this.light.intensity, this.light.specular).then((r) => {
+
+            })
+            this.initLight();
+        }
     }
 
     private clickHandler(e): void{
@@ -81,22 +93,32 @@ export class Builder {
     }
 
     private mouseMove(e): void{
-        this._mouseX = e.clientX
-        this._mouseY = e.clientY
-
-        if(this.buildingObject){
-          let ray = this._scene.pick(this._mouseX, this._mouseY);
-        console.log(ray)
-          if(ray.hit){
-            this.buildingObject.position = new Vector3(ray.pickedPoint.x.toFixed(1), this._currentHeight * this._currentScale, ray.pickedPoint.z.toFixed(1));
-          }
+        this._mouseX = e.clientX;
+        this._mouseY = e.clientY;
+        let vec = this.pickVec()
+        
+        if(vec){
+            if(this.buildingObject){
+                this.buildingObject.setPosition(vec)
+            
+            }else if(this.lightMode){
+                this.light.position = vec;
+            }
         }
+        
+
     }
 
     private keyDown(e){
         let key = this.keyMap[e.key]
         console.log("KeyDown", key, e.key)
         switch(key){
+            case 'PLACE_MODEL':
+                this.placeHandler();
+                break;
+            case 'LIGHT_MODE':
+                this.toggleLightMode();
+                break;
             case 'BUILD_MODE':
                 this.toggleBuilding();
                 break;
@@ -110,10 +132,10 @@ export class Builder {
                 this.prevModel();
                 break;
             case 'SCALE_UP':
-                this.scaleUp();
+                this.changeScale(this._scaleStep);
                 break;
             case 'SCALE_DOWN':
-                this.scaleDown();
+                this.changeScale(-this._scaleStep);
                 break;
             case 'UP_LEVEL':
                 this.changeLevel(1 * this._heightStep);
@@ -126,25 +148,26 @@ export class Builder {
         }
     }
 
-    private addScale(amt: number){
-        console.log(this._currentScale + amt)
-        this._currentScale += amt;
-    }
 
-    private scaleDown(){
-        this.addScale(-1)
-        this.buildingObject.scaling = new Vector3(this._currentScale, this._currentScale, this._currentScale);
-    }
-    private scaleUp(){
-        this.addScale(1);
+    private changeScale(increment){
+        this._currentScale += increment
 
-        this.buildingObject.scaling = new Vector3(this._currentScale, this._currentScale, this._currentScale);
+        if(this.buildingMode){
+            this.buildingObject.scale(this._currentScale)
+        }else if(this.lightMode){
+            this.light.intensity = this._currentScale
+        }
+        
     }
 
 
     private changeLevel(index: number){
         this._currentHeight = this._currentHeight + index;
-        this.buildingObject.position.y = (this._currentScale * this._currentHeight);
+        if(this.buildingMode){
+            this.buildingObject.position.y = (this._currentScale * this._currentHeight);
+        }else if(this.lightMode){
+            this.light.position.y = (this._currentScale * this._currentHeight);
+        }
     }
 
     private nextModel(){
@@ -167,13 +190,15 @@ export class Builder {
     private rotateActiveModel(){
         if(this.buildingMode){
             this._currentRotation += 90;
-            this.buildingObject.rotation = new Vector3(0, this._currentRotation * Math.PI / 180, 0);
+            this.buildingObject.setRotation(this._currentRotation);
         }
     }
 
     private toggleBuilding(){
         console.log("Building Toggle")
         this.buildingMode = !this.buildingMode;
+
+        if(this.buildingMode) this.lightMode = false;
         this.updateUI()
         if(this.buildingMode){
             this.initBuildingModel()
@@ -183,10 +208,25 @@ export class Builder {
             this._ui.unmountBuildMenu();
         }
     }
+    
+    private toggleLightMode(){
+        this.lightMode = !this.lightMode;
 
+        if(this.lightMode) {
+            if(this.buildingMode)this._ui.unmountBuildMenu();
+
+            this.buildingMode = false
+        }
+        this.updateUI();
+        if(this.lightMode){
+            this.initLight();
+            
+        }
+    }
     public changeCollection(id){
         console.log("Change collection: ", id)
         this._currentCollection = this._modelCollections.filter((a) => a._id == id)[0];
+        this._activeModel = 0;
         this._models = this._currentCollection.items;
         this.deinitBuildingModel()
         this.initBuildingModel();
@@ -200,26 +240,56 @@ export class Builder {
     }
     
     private updateUI(){
-        this._ui._clockTime.text = this.buildingMode ? "Build Mode: " + this._models[this._activeModel].name : "";
+        if(this.buildingMode){
+            this._ui._clockTime.text = this.buildingMode ? "Build Mode: " + this._models[this._activeModel].name : "";
+
+        }else if(this.lightMode){
+            this._ui._clockTime.text = "Light Mode"
+        }else{
+            this._ui._clockTime.text = ""
+        }
     
+    }
+
+    private pickVec(){
+        let pickedPoint = this._scene.pick(this._mouseX, this._mouseY);
+
+        if(pickedPoint.hit){
+            return new Vector3(pickedPoint.pickedPoint.x, this._currentHeight * this._currentScale, pickedPoint.pickedPoint.z)
+        }
+    }
+
+    private initLight(){
+        let vec 
+        this.light = new PointLight("new-point", this.pickVec(), this._scene);
+        this.light.intensity = this._currentScale;
+        this.light.diffuse = new Color3(1, 0, 1);
+        this.light.specular = new Color3(1, 0, 1);
+
+        this._scene.addLight(this.light)
     }
     
     private initBuildingModel() {
-        let pickedPoint = this._scene.pick(this._mouseX, this._mouseY);
         this._modelEngine.instanceModel(this._models[this._activeModel].ipfs, (err, model) => {
-    
-          this.buildingObject = model;
-          this.buildingObject.isPickable = false;
-          this.buildingObject.position = new Vector3(pickedPoint.pickedPoint.x, this._currentHeight * this._currentScale, pickedPoint.pickedPoint.z)
-          this.buildingObject.scaling = new Vector3(this._currentScale, this._currentScale, this._currentScale);
-          this.buildingObject.rotation = new Vector3(0, this._currentRotation * Math.PI / 180, 0)
-          this._scene.addMesh(this.buildingObject)
+
+        this.buildingObject = new Model(model);
+
+          this.buildingObject.setPosition(this.pickVec())
+          this.buildingObject.scale(this._currentScale);
+          this.buildingObject.setRotation(this._currentRotation);
+          this.buildingObject.addToScene(this._scene);
         })
         //this._ipfsModelLoader.getModel(null, this._models[this._activeModel].ipfs, this._scene, new Vector3(pickedPoint.pickedPoint.x, 0, pickedPoint.pickedPoint.z), 3);
       }
     
       private deinitBuildingModel(){
         this.buildingObject.dispose()
+        this.buildingObject = null;
+      }
+
+      private deinitLight(){
+          this.light.dispose()
+          this.light = null;
       }
     
 }

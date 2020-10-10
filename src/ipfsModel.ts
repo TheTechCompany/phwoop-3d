@@ -66,7 +66,8 @@ export class IPFSModelLoader{
             mesh.isVisible = false;
             mesh.isPickable = false;
             mesh.checkCollisions = checkCollisions;
-
+            mesh.normalizeToUnitCube()
+            mesh.scaling = new Vector3(1, 1, 1);
             for(var i = 0; i < meshes.length; i++){
                 meshes[i].isPickable = false;
                 meshes[i].isVisible = true;

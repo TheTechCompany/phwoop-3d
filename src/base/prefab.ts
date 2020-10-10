@@ -1,6 +1,6 @@
-import { Scene } from "@babylonjs/core"
-import { Vector3 } from "babylonjs";
+import { Scene, Vector3, PointLight, Color3 } from "@babylonjs/core"
 import { ModelEngine } from "../models/modelengine";
+import Model from '../models/model';
 export default class Prefab{
     private _scene: Scene;
     private _engine: ModelEngine;
@@ -18,6 +18,18 @@ export default class Prefab{
 
     public build(){
         let items = this._prefab.locations;
+        let lights = this._prefab.lights;
+
+        for(var i = 0; i < lights.lenght; i++){
+            let light = lights[i]
+            let _light = new PointLight("light-" + i, new Vector3(light.position.x, light.position.y, light.position.z), this._scene)
+            _light.intensity = light.intensity;
+            let color =  new Color3(light.color.r, light.color.g, light.color.b);
+            _light.diffuse = color
+            _light.specular = color
+
+            this._scene.addLight(_light)
+        }
         for(var i = 0; i < items.length; i++){
             let position = items[i].position;
             let rotation = items[i].rotation;
@@ -26,9 +38,10 @@ export default class Prefab{
             console.log("Placing model", items[i])
             this._engine.instanceModel(this.getCidForModel(items[i].model), (err, model) => {
                 //model.checkCollisions = true;
-                model.position = new Vector3(position.x, position.y, position.z)
-                model.rotation = new Vector3(rotation.x, rotation.y, rotation.z);
-                model.scaling = new Vector3(scaling.x, scaling.y, scaling.z)
+                let _model = new Model(model)
+                _model.setPosition(new Vector3(position.x, position.y, position.z))
+                _model.setRotationVec(new Vector3(rotation.x, rotation.y, rotation.z))
+                _model.scaleVec(new Vector3(scaling.x, scaling.y, scaling.z))
             }, true)
         }
     }

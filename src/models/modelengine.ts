@@ -1,4 +1,4 @@
-import { Scene, TransformNode } from "@babylonjs/core";
+import { Scene, Mesh, TransformNode } from "@babylonjs/core";
 import { IPFSModelLoader } from "../ipfsModel";
 
 export class ModelEngine{
@@ -22,15 +22,8 @@ export class ModelEngine{
             //console.log(mesh)
             mesh.setParent(null)
 
-            let newMesh = mesh.clone()
+            let newMesh : Mesh = mesh.clone()
             newMesh.isPickable = false
-          //  console.log("Loaded new mesh", newMesh)
-            /*let rootNode = new TransformNode(`ipfs-root-${cid}`, this._scene)
-            mesh.parent = rootNode;
-            mesh.isVisible = true;*/
-           // this._scene.addMesh(newMesh)
-
-            //rootNode.normalizeToUnitCube()
             
             cb(null, newMesh)
         }, checkCollisions)
