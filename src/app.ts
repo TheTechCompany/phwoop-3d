@@ -30,12 +30,14 @@ import BaseEngine from "./base/engine";
 import { ModelEngine } from "./models/modelengine";
 import { addModelToPrefab, getPrefab } from './api/prefabActions';
 import Prefab from './base/prefab';
+import { Builder } from "./models/builder";
 
 enum State { START = 0, GAME = 1, LOSE = 2, CUTSCENE = 3 };
 
 class App{
   
   private _baseEngine: BaseEngine;
+  private _builder: Builder;
 
   private _ui: Hud;
   private _ipfs;
@@ -63,10 +65,6 @@ class App{
   private _models = [];
   private _activeModel = 0;
 
-  private _currentHeight = 0;
-  private _currentScale = 3;
-  private _currentRotation = 0;
-
   private _prefab;
 
   constructor(){
@@ -74,20 +72,15 @@ class App{
     let characterSelector = new CharacterSelector(this._loadCharacter.bind(this));
     characterSelector.mount()
 
-    getCollections().then((collections) => {
-      this._modelCollections = collections;
-      let collection = this._modelCollections.filter((a) => a.name == "Fantasy Town Kit")[0];
-      if(collection){
-        getModels(collection._id).then((models) => {
-            this._models = models.items;
+    
+    
 
             getPrefab().then((r) => {
               this._prefab = r;
             })
-        })
-      }
-    })
-    
+      
+      
+        
   }
 
   private _loadCharacter(id){
@@ -107,7 +100,6 @@ class App{
 
     this._engine.displayLoadingUI()
 
-    this._ui = new Hud(this._scene)
     
     //Setup lights
     var light1: HemisphericLight = new HemisphericLight("light1", new Vector3(1, 33, 0), this._scene);  
@@ -135,8 +127,6 @@ class App{
     await this._setUpIPFS();
     await this._setUpGame();
 
-
-
     this._canvas.focus();
 
     let p = new Prefab(this._scene, this._modelEngine, this._prefab);
@@ -162,6 +152,7 @@ class App{
 
     this._modelEngine = new ModelEngine(this._scene, this._ipfsModelLoader)
 
+    this._builder = new Builder(this._scene, this._modelEngine)
   
     await this._loadCharacterAssets(scene, this.characterCid);
     
@@ -178,100 +169,12 @@ class App{
 
     this._player = new Character(this.assets, scene, this._ipfsModelLoader);
         //Builder Controls
-        window.addEventListener('click', (e) => {
-          if(this._buildingMode){
-            this.buildingObject.isPickable = false;
-            addModelToPrefab(this._models[this._activeModel]._id, this.buildingObject.position, this.buildingObject.rotation, this._currentScale).then((r) => {
-              console.log("Model update", r)
-            })
-            this.initBuildingModel()
-          }
-        })
-
-        window.addEventListener('mousemove', (e) => {
-          console.log("Moving mouse")
-            this._mouseX = e.clientX
-            this._mouseY = e.clientY
-
-            if(this.buildingObject){
-              let ray = scene.pick(this._mouseX, this._mouseY);
-              this.buildingObject.position = new Vector3(ray.pickedPoint.x.toFixed(1), this._currentHeight * this._currentScale, ray.pickedPoint.z.toFixed(1));
-            }
-        })
-
-        window.addEventListener('keydown', (e) => {
-          console.log(e.key, e.keyCode)
-            if(e.key == 'b'){
-                this._buildingMode = !this._buildingMode;
-                this.updateUI()
-                if(this._buildingMode){
-                  this.initBuildingModel()
-                }else{
-                  this.deinitBuildingModel()
-                }
-
-            }else if(e.key == 'n'){
-              if(this._activeModel < this._models.length){
-                this._activeModel += 1
-              }
-              this.deinitBuildingModel()
-              this.initBuildingModel()
-              this.updateUI()
-            }else if(e.key == 'p'){
-              if(this._activeModel > 0){
-                this._activeModel -= 1;
-              }
-              this.deinitBuildingModel()
-              this.initBuildingModel()
-              this.updateUI()
-            }else if(e.key == 'r'){
-              if(this._buildingMode){
-                this._currentRotation += 90;
-                this.buildingObject.rotation = new Vector3(0, this._currentRotation * Math.PI / 180, 0);
-              }
-            }else if(e.key == '<'){
-              this._currentScale -= 1;
-              this.buildingObject.scaling = new Vector3(this._currentScale, this._currentScale, this._currentScale);
-            }else if(e.key == '>'){
-              this._currentScale += 1;
-              this.buildingObject.scaling = new Vector3(this._currentScale, this._currentScale, this._currentScale);
-            }else if(e.key == '{'){
-              this._currentHeight -= 1;
-              this.buildingObject.position.y = this._currentScale * this._currentHeight;
-            }else if(e.key == '}'){
-              this._currentHeight += 1;
-              this.buildingObject.position.y = this._currentScale * this._currentHeight;
-            }
-        })
+        
    // const camera = this._player.activatePlayerCamera();
     
   }
 
 
-  private updateUI(){
-    this._ui._clockTime.text = this._buildingMode ? "Build Mode: " + this._models[this._activeModel].name : "";
-
-  }
-
-  private buildingObject : Mesh;
-
-  private initBuildingModel() {
-    let pickedPoint = this._scene.pick(this._mouseX, this._mouseY);
-    this._modelEngine.instanceModel(this._models[this._activeModel].ipfs, (err, model) => {
-
-      this.buildingObject = model;
-      this.buildingObject.isPickable = false;
-      this.buildingObject.position = new Vector3(pickedPoint.pickedPoint.x, this._currentHeight * this._currentScale, pickedPoint.pickedPoint.z)
-      this.buildingObject.scaling = new Vector3(this._currentScale, this._currentScale, this._currentScale);
-      this.buildingObject.rotation = new Vector3(0, this._currentRotation * Math.PI / 180, 0)
-      //this._scene.addMesh(model)
-    })
-    //this._ipfsModelLoader.getModel(null, this._models[this._activeModel].ipfs, this._scene, new Vector3(pickedPoint.pickedPoint.x, 0, pickedPoint.pickedPoint.z), 3);
-  }
-
-  private deinitBuildingModel(){
-    this.buildingObject.dispose()
-  }
 
 
 

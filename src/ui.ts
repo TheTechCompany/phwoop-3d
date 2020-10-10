@@ -1,8 +1,10 @@
-import { TextBlock, StackPanel, AdvancedDynamicTexture, Image, Button, Rectangle, Control, Grid } from "@babylonjs/gui";
-import { Scene, Sound, ParticleSystem, PostProcess, Effect, SceneSerializer } from "@babylonjs/core";
+import { TextBlock, ScrollViewer, StackPanel, AdvancedDynamicTexture, Image, Button, Rectangle, Control, Grid } from "@babylonjs/gui";
+import { Scene, Sound, ParticleSystem, PostProcess, Effect, SceneSerializer, Observable } from "@babylonjs/core";
+import { Builder } from "./models/builder";
 
 export class Hud {
     private _scene: Scene;
+    private _builder: Builder;
 
     private _playerUI;
     public _clockTime;
@@ -18,11 +20,14 @@ export class Hud {
     private upBtn;
     private downBtn;
 
+    private _buildMenu;
+
     private _controls;
 
-    constructor(scene: Scene) {
+    constructor(scene: Scene, builder: Builder) {
 
         this._scene = scene;
+        this._builder = builder;
 
         const playerUI = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         this._playerUI = playerUI;
@@ -174,6 +179,56 @@ export class Hud {
 
         }
         this._scene.addTexture
+    }
+
+    public mountBuildMenu(collections): void{
+        let sv = new ScrollViewer();
+        sv.width = 0.3;
+        sv.height = 1;
+        sv.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        this._buildMenu = sv;
+        this._playerUI.addControl(sv)
+
+        let grid = new Grid();
+
+        grid.addColumnDefinition(300, true)
+
+        let panel = new Rectangle();
+        panel.width = 1;
+        panel.height = 1;
+        panel.color = 'white';
+        panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+        panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+
+
+        for(var i = 0; i < collections.length; i++){
+            grid.addRowDefinition(30, true)
+
+            let panel = new Rectangle()
+            panel.width = 1;
+            panel.heightInPixels = 30;
+            //panel.thickness ;
+            panel.background = "white";
+
+            let button = Button.CreateSimpleButton(collections[i]._id, collections[i].name)
+            let collectionId = collections[i]._id
+            button.onPointerClickObservable.add((e) => {
+                console.log("Change collection to: " + collectionId)
+                this._builder.changeCollection(collectionId)
+            })
+            //panel.addControl(button)
+            grid.addControl(button, i, 0)
+
+        }
+
+        panel.addControl(grid)
+        this._buildMenu.addControl(panel)
+
+        
+    }
+
+    public unmountBuildMenu(): void{
+        this._playerUI.removeControl(this._buildMenu)
     }
 
     public updateHud(): void {
