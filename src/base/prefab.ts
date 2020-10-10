@@ -20,7 +20,7 @@ export default class Prefab{
         let items = this._prefab.locations;
         let lights = this._prefab.lights;
 
-        for(var i = 0; i < lights.lenght; i++){
+        for(var i = 0; i < lights.length; i++){
             let light = lights[i]
             let _light = new PointLight("light-" + i, new Vector3(light.position.x, light.position.y, light.position.z), this._scene)
             _light.intensity = light.intensity;
