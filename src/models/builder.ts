@@ -15,6 +15,7 @@ export class Builder {
     //Mouse coords
     private _mouseX;
     private _mouseY;
+    private _mouseVec : Vector3;
 
     private _modelCollections = [];
     private _models = [];
@@ -95,15 +96,17 @@ export class Builder {
     private mouseMove(e): void{
         this._mouseX = e.clientX;
         this._mouseY = e.clientY;
-        let vec = this.pickVec()
+        this._mouseVec = this.pickVec()
         
-        if(vec){
+        if(this._mouseVec){
             if(this.buildingObject){
-                this.buildingObject.setPosition(vec)
+                this.buildingObject.setPosition(this._mouseVec)
             
             }else if(this.lightMode){
-                this.light.position = vec;
+                this.light.position = this._mouseVec;
             }
+        }else{
+            console.log("No pick", this._mouseX)
         }
         
 
@@ -213,7 +216,10 @@ export class Builder {
         this.lightMode = !this.lightMode;
 
         if(this.lightMode) {
-            if(this.buildingMode)this._ui.unmountBuildMenu();
+            if(this.buildingMode){
+                this._ui.unmountBuildMenu();
+                this.buildingObject.dispose()
+            }
 
             this.buildingMode = false
         }
@@ -260,7 +266,7 @@ export class Builder {
     }
 
     private initLight(){
-        let vec 
+        console.log("ADD LIGHT")
         this.light = new PointLight("new-point", this.pickVec(), this._scene);
         this.light.intensity = this._currentScale;
         this.light.diffuse = new Color3(1, 0, 1);

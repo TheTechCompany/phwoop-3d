@@ -11,6 +11,8 @@ export class Environment {
     this._scene = scene;
     this._width = width;
     this._height = height;
+
+    //this._scene.createDefaultEnvironment();
   }
 
   public async load(){

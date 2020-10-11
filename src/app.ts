@@ -16,7 +16,7 @@ import {
   Vector3, 
   HemisphericLight, 
   Mesh, 
-  MeshBuilder, DirectionalLight } from "@babylonjs/core";
+  MeshBuilder, DirectionalLight, Sound } from "@babylonjs/core";
   import {HexTile} from './hex';
 import { Player } from './characterController';
 import { Environment } from './environment';
@@ -159,6 +159,14 @@ class App{
     
     await this._initPlayer(scene)
 
+    let music = new Sound("kereru", "kereru.mp3", this._scene, null, {
+      loop: true,
+      autoplay: true,
+      spatialSound: true,
+      distanceModel: "exponential",
+      rolloffFactor: 1,
+      maxDistance: 26    
+    })
     this._engine.hideLoadingUI()
     this._baseEngine.mount();
    
