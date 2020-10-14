@@ -138,12 +138,8 @@ class App{
   }
 
   private async _setUpIPFS(){
-    this._ipfs = await IPFS.create({
-      config: {
-        Addresses: {
-        }
-      }
-    })
+    this._ipfs = await IPFS.create()
+    this._ipfs.swarm.connect('/ip4/13.238.211.99/tcp/4001/p2p/QmTaWkVWou67eTdhh2FnwEb5jtoTPWiFTQt437sw8PVfZX')
     console.log("IPFS", this._ipfs);
     this._ipfsModelLoader = new IPFSModelLoader(this._ipfs)
   }

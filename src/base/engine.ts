@@ -12,9 +12,13 @@ export default class BaseEngine{
     const _engine = new Engine(canvas, true);
     this._engine = _engine;
     this._scene = new Scene(this._engine);
-
+    
     this._engine.runRenderLoop(() => {
       this._scene.render();
+    })
+
+    canvas.addEventListener('load', () => {
+      this._engine.resize()
     })
 
     window.addEventListener("resize",  () => {
@@ -23,10 +27,11 @@ export default class BaseEngine{
   }
 
   public mount(){
-    this._canvas.style.display = "initial";
+    this._engine.resize();
+    this._canvas.style.display = "flex";
   }
 
-    private _createCanvas(){
+    private _createCanvas() : HTMLCanvasElement{
         document.documentElement.style["overflow"] = "hidden";
         document.documentElement.style.overflow = "hidden";
         document.documentElement.style.width = "100%";

@@ -61,7 +61,7 @@ export class Builder {
         this.clickHandler = this.clickHandler.bind(this);
         this.keyDown = this.keyDown.bind(this);
 
-        getCollections().then((collections) => {
+        getCollections("buildings").then((collections) => {
             this._modelCollections = collections;
             let collection = this._modelCollections.filter((a) => a.name == "Fantasy Town Kit")[0];
             this._models = collection.items;
@@ -246,7 +246,7 @@ export class Builder {
     }
     
     private updateUI(){
-        if(this.buildingMode){
+        if(this.buildingMode && this._activeModel && this._models.length > 0){
             this._ui._clockTime.text = this.buildingMode ? "Build Mode: " + this._models[this._activeModel].name : "";
 
         }else if(this.lightMode){
@@ -276,6 +276,10 @@ export class Builder {
     }
     
     private initBuildingModel() {
+        let vec = this.pickVec();
+        if(vec){
+
+        
         this._modelEngine.instanceModel(this._models[this._activeModel].ipfs, (err, model) => {
 
         this.buildingObject = new Model(model);
@@ -286,7 +290,8 @@ export class Builder {
           this.buildingObject.addToScene(this._scene);
         })
         //this._ipfsModelLoader.getModel(null, this._models[this._activeModel].ipfs, this._scene, new Vector3(pickedPoint.pickedPoint.x, 0, pickedPoint.pickedPoint.z), 3);
-      }
+        }
+    }
     
       private deinitBuildingModel(){
         this.buildingObject.dispose()

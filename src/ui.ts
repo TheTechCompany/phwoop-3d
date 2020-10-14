@@ -1,5 +1,5 @@
 import { TextBlock, ScrollViewer, StackPanel, AdvancedDynamicTexture, Image, Button, Rectangle, Control, Grid } from "@babylonjs/gui";
-import { Scene, Sound, ParticleSystem, PostProcess, Effect, SceneSerializer, Observable } from "@babylonjs/core";
+import { Scene, Sound, ParticleSystem, PostProcess, Effect, SceneSerializer, Observable, Color3 } from "@babylonjs/core";
 import { Builder } from "./models/builder";
 
 export class Hud {
@@ -19,6 +19,31 @@ export class Hud {
     private rightBtn;
     private upBtn;
     private downBtn;
+
+    private _activeType = "buildings"
+
+    private headerItems = [
+        {
+            type: "buildings",
+            label: "Build",
+            icon: "icons/build.svg"
+        },
+        {
+            type: "nature",
+            label: "Nature",
+            icon: "icons/nature.svg"
+        },
+        {
+            object: ["light"],
+            label: "Light",
+            icon: "icons/light.svg"
+        },
+        {
+            label: "Art",
+            object: ["speaker", "frame"],
+            type: "media",
+            icon: "icons/art.svg"
+        }];
 
     private _buildMenu;
 
@@ -183,32 +208,43 @@ export class Hud {
 
     public mountBuildMenu(collections): void{
         let sv = new ScrollViewer();
-        sv.width = 0.3;
+        sv.widthInPixels = 300;
         sv.height = 1;
         sv.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
         this._buildMenu = sv;
         this._playerUI.addControl(sv)
 
+        //Builder Grid
         let grid = new Grid();
-
         grid.addColumnDefinition(300, true)
 
-        let panel = new Rectangle();
-        panel.width = 1;
-        panel.height = 1;
-        panel.color = 'white';
-        panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-        panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
 
+        //Header Grid
+        let headerGrid = new Grid();
+        headerGrid.addRowDefinition(60, true)
+        for(var i = 0; i < this.headerItems.length; i++){
+          let item = this.headerItems[i];
+          headerGrid.addColumnDefinition(300 / this.headerItems.length, true)
+          
+          let type = item.type;
+          let button = Button.CreateImageOnlyButton("header-" + item.type, item.icon)
+
+          button.onPointerClickObservable.add((e) => {
+              console.log("Header Menu Button")
+              this._activeType = type
+          }, null, null, this)
+          button.background = (this._activeType == item.type ? "#dfdfdf" : "white");
+          button.paddingLeftInPixels = 2;
+          button.paddingRightInPixels = 2;
+          headerGrid.addControl(button, 0, i)
+        }
+
+
+        grid.addRowDefinition(60, true)
+        grid.addControl(headerGrid, 0, 0)
 
         for(var i = 0; i < collections.length; i++){
-            grid.addRowDefinition(30, true)
-
-            let panel = new Rectangle()
-            panel.width = 1;
-            panel.heightInPixels = 30;
-            //panel.thickness ;
-            panel.background = "white";
+            grid.addRowDefinition(60, true)
 
             let button = Button.CreateSimpleButton(collections[i]._id, collections[i].name)
             let collectionId = collections[i]._id
@@ -217,12 +253,11 @@ export class Hud {
                 this._builder.changeCollection(collectionId)
             })
             //panel.addControl(button)
-            grid.addControl(button, i, 0)
+            grid.addControl(button, i+1, 0)
 
         }
 
-        panel.addControl(grid)
-        this._buildMenu.addControl(panel)
+        this._buildMenu.addControl(grid)
 
         
     }
