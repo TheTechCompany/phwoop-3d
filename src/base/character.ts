@@ -27,6 +27,10 @@ export class Character{
         this._player = assets.mesh;
         this._ipfs = ipfs;
 
+        this._scene.audioListenerPositionProvider = () => {
+            return this._player.absolutePosition
+        }
+
         this._player.normalizeToUnitCube()
         this._player.scaling.scaleInPlace(2)
 
@@ -76,11 +80,14 @@ export class Character{
 
         this._controller.setFaceForward(true)
         this._controller.setMode(0);
-        this._controller.setTurnSpeed(90);
+        
+        this._controller.setTurnSpeed(180);
 
         this._controller.setCameraTarget(new Vector3(0, 1, 0));
         this._controller.setWalkSpeed(7);
+        this._controller.setRunSpeed(20)
         this._controller.setNoFirstPerson(false);
+        
         this._controller.setStepOffset(0.4);
         this._controller.setSlopeLimit(30, 60);
 

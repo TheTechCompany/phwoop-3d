@@ -1,6 +1,7 @@
 import { TextBlock, ScrollViewer, StackPanel, AdvancedDynamicTexture, Image, Button, Rectangle, Control, Grid } from "@babylonjs/gui";
 import { Scene, Sound, ParticleSystem, PostProcess, Effect, SceneSerializer, Observable, Color3 } from "@babylonjs/core";
-import { Builder } from "./models/builder";
+import { Builder } from "./builder/builder";
+import BuildMenu from './builder/menu';
 
 export class Hud {
     private _scene: Scene;
@@ -22,28 +23,6 @@ export class Hud {
 
     private _activeType = "buildings"
 
-    private headerItems = [
-        {
-            type: "buildings",
-            label: "Build",
-            icon: "icons/build.svg"
-        },
-        {
-            type: "nature",
-            label: "Nature",
-            icon: "icons/nature.svg"
-        },
-        {
-            object: ["light"],
-            label: "Light",
-            icon: "icons/light.svg"
-        },
-        {
-            label: "Art",
-            object: ["speaker", "frame"],
-            type: "media",
-            icon: "icons/art.svg"
-        }];
 
     private _buildMenu;
 
@@ -80,24 +59,7 @@ export class Hud {
         stackPanel.addControl(clockTime);
         this._clockTime = clockTime;
 
-       
-        //popup tutorials + hint
-        const tutorial = new Rectangle();
-        tutorial.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-        tutorial.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-        tutorial.top = "12%";
-        tutorial.left = "-1%";
-        tutorial.height = 0.2;
-        tutorial.width = 0.2;
-        tutorial.thickness = 0;
-        tutorial.alpha = 0.6;
-        this._playerUI.addControl(tutorial);
-        this.tutorial = tutorial;
-        //movement image, will disappear once you attempt all of the moves
-        let movementPC = new Image("pause", "sprites/tutorial.jpeg");
-        tutorial.addControl(movementPC);
-
-        
+    
 
         this._createControlsMenu();
 
@@ -105,10 +67,6 @@ export class Hud {
         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
             this.isMobile = true; // tells inputController to track mobile inputs
 
-            //tutorial image
-            movementPC.isVisible = false;
-            let movementMobile = new Image("pause", "sprites/tutorialMobile.jpeg");
-            tutorial.addControl(movementMobile);
             //--ACTION BUTTONS--
             // container for action buttons (right side of screen)
             const actionContainer = new Rectangle();
@@ -206,64 +164,12 @@ export class Hud {
         this._scene.addTexture
     }
 
-    public mountBuildMenu(collections): void{
-        let sv = new ScrollViewer();
-        sv.widthInPixels = 300;
-        sv.height = 1;
-        sv.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-        this._buildMenu = sv;
-        this._playerUI.addControl(sv)
-
-        //Builder Grid
-        let grid = new Grid();
-        grid.addColumnDefinition(300, true)
-
-
-        //Header Grid
-        let headerGrid = new Grid();
-        headerGrid.addRowDefinition(60, true)
-        for(var i = 0; i < this.headerItems.length; i++){
-          let item = this.headerItems[i];
-          headerGrid.addColumnDefinition(300 / this.headerItems.length, true)
-          
-          let type = item.type;
-          let button = Button.CreateImageOnlyButton("header-" + item.type, item.icon)
-
-          button.onPointerClickObservable.add((e) => {
-              console.log("Header Menu Button")
-              this._activeType = type
-          }, null, null, this)
-          button.background = (this._activeType == item.type ? "#dfdfdf" : "white");
-          button.paddingLeftInPixels = 2;
-          button.paddingRightInPixels = 2;
-          headerGrid.addControl(button, 0, i)
-        }
-
-
-        grid.addRowDefinition(60, true)
-        grid.addControl(headerGrid, 0, 0)
-
-        for(var i = 0; i < collections.length; i++){
-            grid.addRowDefinition(60, true)
-
-            let button = Button.CreateSimpleButton(collections[i]._id, collections[i].name)
-            let collectionId = collections[i]._id
-            button.onPointerClickObservable.add((e) => {
-                console.log("Change collection to: " + collectionId)
-                this._builder.changeCollection(collectionId)
-            })
-            //panel.addControl(button)
-            grid.addControl(button, i+1, 0)
-
-        }
-
-        this._buildMenu.addControl(grid)
-
-        
+    public mountControl(item){
+        this._playerUI.addControl(item)
     }
 
-    public unmountBuildMenu(): void{
-        this._playerUI.removeControl(this._buildMenu)
+    public unmountControl(item){
+        this._playerUI.removeControl(item)
     }
 
     public updateHud(): void {

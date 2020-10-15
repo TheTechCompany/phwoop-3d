@@ -1,5 +1,5 @@
 import { Scene, Mesh, TransformNode } from "@babylonjs/core";
-import { IPFSModelLoader } from "../ipfsModel";
+import { IPFSModelLoader } from "../base/ipfsModel";
 
 export class ModelEngine{
 
@@ -19,6 +19,7 @@ export class ModelEngine{
             let d = new Date();
             mesh.isVisible = false;
             mesh.isPickable = false;
+
             //console.log(mesh)
             mesh.setParent(null)
 

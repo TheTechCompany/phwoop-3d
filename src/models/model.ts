@@ -36,12 +36,12 @@ export default class Model{
 
     public scale(factor: number): void{
         this._model.normalizeToUnitCube()
-        this._model.scaling = new Vector3(factor, factor, factor)
+        this._model.scaling.scaleInPlace(factor);// = new Vector3(factor, factor, factor)
     }
 
     public scaleVec(vec: Vector3){
         this._model.normalizeToUnitCube()
-        this._model.scaling = vec;
+        this._model.scaling.scaleInPlace(vec.x)// = vec;
     }
 
     public dispose(): void{

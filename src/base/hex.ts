@@ -30,7 +30,6 @@ export class HexTile{
 
     private makeHex(size: number){
         let corners = this.getHex(size)
-        console.log(corners)
         this._hex = MeshBuilder.CreatePolygon('hexagon', {depth: 0.1, shape: corners, sideOrientation: Mesh.DOUBLESIDE}, this._scene)
         this._hex.checkCollisions = true
 

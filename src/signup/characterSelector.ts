@@ -12,7 +12,7 @@ export class CharacterSelector{
             image: '/characters/abe.png'
         }, 
         'Sporty Granny': {
-            cid: 'QmZA6QqH5HXNXLimXgKY5JsH4wdbh7SPYmAE3RBJK7hfFd',
+            cid: 'QmYRb2nEC1KcDHjeeUQCBHQjDwsNN7cPw5cDTJGbzgePAD',
             image: '/characters/sporty-granny.png'
         },
         'Erika': {

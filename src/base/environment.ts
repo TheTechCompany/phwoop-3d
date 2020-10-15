@@ -12,7 +12,10 @@ export class Environment {
     this._width = width;
     this._height = height;
 
-    //this._scene.createDefaultEnvironment();
+    this._scene.createDefaultEnvironment({
+      createGround: false,
+      createSkybox: false
+    });
   }
 
   public async load(){
@@ -23,10 +26,6 @@ export class Environment {
       }
       this._ground.push(row)
     }
-   /* var _ground = Mesh.CreateBox("ground", 60, this._scene);
-    _ground.scaling = new Vector3(1, .02, 1);
-    _ground.checkCollisions = true;*/
-    //_ground.freezeWorldMatrix();
   }
 
   public getTile(x, y){

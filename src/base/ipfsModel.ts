@@ -11,18 +11,18 @@ export class IPFSModelLoader{
 
     public async getIPFSModel(cid){
         let startTime = new Date().getTime();
-        console.log(`=> Loading IPFS Model from CID: ${cid}`)
+        console.debug(`=> Loading IPFS Model from CID: ${cid}`)
         
         if(!this._models[cid]){
             let stream = this._ipfs.cat(cid)
             let chunks = Buffer.from('')
 
             for await(const chunk of stream){
-                console.log(`Fetching chunk for CID: ${cid}`)
+                console.debug(`Fetching chunk for CID: ${cid}`)
                 chunks = Buffer.concat([chunks, chunk])
             }
             let endTime = new Date().getTime();
-            console.log(`Finished fetching CID: ${cid} took ${(endTime - startTime) / 1000} seconds`)
+            console.debug(`Finished fetching CID: ${cid} took ${(endTime - startTime) / 1000} seconds`)
             let blob = new Blob([chunks])
             let url = URL.createObjectURL(blob)
             
@@ -63,15 +63,29 @@ export class IPFSModelLoader{
         let url = await this.getIPFSModel(cid);
         SceneLoader.ImportMesh(null, "", url, scene, (meshes, particles, skeletons, animationGroups) => {
             let mesh = meshes[0];
+            
             mesh.isVisible = false;
             mesh.isPickable = false;
             mesh.checkCollisions = checkCollisions;
             mesh.normalizeToUnitCube()
-            mesh.scaling = new Vector3(1, 1, 1);
-            for(var i = 0; i < meshes.length; i++){
-                meshes[i].isPickable = false;
-                meshes[i].isVisible = true;
-                //meshes[i].checkCollisions = checkCollisions
+            // = true;
+            //mesh.scaling.scaleInPlace(1); 
+
+            let children = mesh.getChildMeshes(false)
+
+            for(var i = 0; i < children.length; i++){
+
+                if(children[i].material){
+                    children[i].material.sideOrientation = 0
+                    children[i].material.backFaceCulling = false;
+                    console.log(children[i])
+                }else{
+                    console.log("No material for mesh", children[i])
+                }
+
+                children[i].isPickable = false;
+                children[i].isVisible = true;
+                children[i].checkCollisions = checkCollisions
             }
             cb(null, mesh)
         }, (e) => {

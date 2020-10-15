@@ -3,13 +3,17 @@ import { int } from "babylonjs";
 import { getCollections } from "../api/modelCollections";
 import { addLightToPrefab, addModelToPrefab } from "../api/prefabActions";
 import { Hud } from "../ui";
-import Model from "./model";
-import { ModelEngine } from "./modelengine";
+import Model from "../models/model";
+import { ModelEngine } from "../models/modelengine";
+import BuildMenu from "./menu";
+import Speaker from "../models/speaker";
 
 export class Builder {
     
     private _modelEngine : ModelEngine;
     private _ui : Hud;
+    private _menu: BuildMenu;
+
     private _scene : Scene;
     
     //Mouse coords
@@ -18,22 +22,24 @@ export class Builder {
     private _mouseVec : Vector3;
 
     private _modelCollections = [];
-    private _models = [];
+
     private _currentCollection;
-    private _activeModel = 0;
+    private _activeModel;
 
     private _currentHeight = 0;
     private _currentScale = 1;
     private _currentRotation = 0;
 
     private _heightStep = 1;
-    private _rotationStep = 90;
+    private _rotationStep = 60; //Hexagon angles
     private _scaleStep = 1;
 
     private buildingObject: Model;
     private light : PointLight;
+    private speakerObject: Speaker;
 
     public lightMode: boolean = false;
+    public soundMode: boolean = false;
     public buildingMode: boolean = false;
 
     private keyMap = {
@@ -56,16 +62,31 @@ export class Builder {
         this._scene = scene;
 
         this._ui = new Hud(scene, this);
+        this._menu = new BuildMenu()
+
+        this._menu.setModelChangeListener((type, model) => {
+            console.log("SET ACTIVE MODEL")
+            if(type == "light"){
+                this.lightMode = true;
+                this.initLight()
+            }else if(type == "media"){
+                this.soundMode = true;
+                this.initSpeaker();
+            }else{
+                if(this.light) this.deinitLight()
+                this.lightMode = false;
+                this._activeModel = model;
+                if(this.buildingObject != undefined){
+                    this.deinitBuildingModel()
+                }
+                this.initBuildingModel()
+            }
+
+        })
 
         this.mouseMove = this.mouseMove.bind(this);
         this.clickHandler = this.clickHandler.bind(this);
         this.keyDown = this.keyDown.bind(this);
-
-        getCollections("buildings").then((collections) => {
-            this._modelCollections = collections;
-            let collection = this._modelCollections.filter((a) => a.name == "Fantasy Town Kit")[0];
-            this._models = collection.items;
-        })
 
         window.addEventListener('click', this.clickHandler);
         window.addEventListener('mousemove', this.mouseMove);
@@ -75,8 +96,8 @@ export class Builder {
     }
 
     private placeHandler(): void{
-        if(this.buildingMode){
-            addModelToPrefab(this._models[this._activeModel]._id, this.buildingObject.position, this.buildingObject.rotation, this._currentScale).then((r) => {
+        if(this.buildingMode && !this.lightMode && !this.soundMode){
+            addModelToPrefab(this._activeModel._id, this.buildingObject.position, this.buildingObject.rotation, this._currentScale).then((r) => {
                 
             })
             this.initBuildingModel()
@@ -86,6 +107,8 @@ export class Builder {
 
             })
             this.initLight();
+        }else if(this.soundMode){
+            this.speakerObject = null
         }
     }
 
@@ -99,14 +122,16 @@ export class Builder {
         this._mouseVec = this.pickVec()
         
         if(this._mouseVec){
-            if(this.buildingObject){
+            if(this.buildingObject && !this.lightMode){
                 this.buildingObject.setPosition(this._mouseVec)
             
             }else if(this.lightMode){
+                this._mouseVec.y = this._currentHeight
                 this.light.position = this._mouseVec;
+            }else if(this.soundMode){
+                this.speakerObject.setPosition(this._mouseVec)
             }
         }else{
-            console.log("No pick", this._mouseX)
         }
         
 
@@ -119,20 +144,11 @@ export class Builder {
             case 'PLACE_MODEL':
                 this.placeHandler();
                 break;
-            case 'LIGHT_MODE':
-                this.toggleLightMode();
-                break;
             case 'BUILD_MODE':
                 this.toggleBuilding();
                 break;
             case 'ROTATE_MODEL':
                 this.rotateActiveModel();
-                break;
-            case 'NEXT_MODEL':
-                this.nextModel();
-                break;
-            case 'PREV_MODEL':
-                this.prevModel();
                 break;
             case 'SCALE_UP':
                 this.changeScale(this._scaleStep);
@@ -155,10 +171,12 @@ export class Builder {
     private changeScale(increment){
         this._currentScale += increment
 
-        if(this.buildingMode){
+        if(this.buildingMode && !this.lightMode && !this.soundMode){
             this.buildingObject.scale(this._currentScale)
         }else if(this.lightMode){
             this.light.intensity = this._currentScale
+        }else if(this.soundMode){
+            this.speakerObject.scale(this._currentScale)
         }
         
     }
@@ -166,34 +184,22 @@ export class Builder {
 
     private changeLevel(index: number){
         this._currentHeight = this._currentHeight + index;
-        if(this.buildingMode){
+        if(this.buildingMode && !this.lightMode && !this.soundMode){
             this.buildingObject.position.y = (this._currentScale * this._currentHeight);
         }else if(this.lightMode){
-            this.light.position.y = (this._currentScale * this._currentHeight);
+            this.light.position.y = (this._currentHeight);
+        }else if(this.soundMode){
+            this.speakerObject.position.y = (this._currentHeight * this._currentScale)
         }
     }
 
-    private nextModel(){
-        if(this._activeModel < this._models.length){
-            this._activeModel += 1
-          }
-          this.deinitBuildingModel()
-          this.initBuildingModel()
-          this.updateUI()
-    }
 
-    private prevModel(){
-        if(this._activeModel > 0){
-            this._activeModel -= 1;
-          }
-          this.deinitBuildingModel()
-          this.initBuildingModel()
-          this.updateUI()
-    }
     private rotateActiveModel(){
-        if(this.buildingMode){
-            this._currentRotation += 90;
+        this._currentRotation += this._rotationStep;
+        if(this.buildingMode && !this.soundMode){
             this.buildingObject.setRotation(this._currentRotation);
+        }else if(this.soundMode){
+            this.speakerObject.rotation = new Vector3(0, this._currentRotation * (Math.PI / 180), 0)
         }
     }
 
@@ -202,66 +208,41 @@ export class Builder {
         this.buildingMode = !this.buildingMode;
 
         if(this.buildingMode) this.lightMode = false;
-        this.updateUI()
+
         if(this.buildingMode){
-            this.initBuildingModel()
-            this._ui.mountBuildMenu(this._modelCollections);
+           // this.initBuildingModel()
+            this._ui.mountControl(this._menu)
         }else{
+            if(this.light) this.deinitLight()
+            if(this.speakerObject) this.deinitSpeaker();
+            this.lightMode = false;
+            this.soundMode = false;
             this.deinitBuildingModel()
-            this._ui.unmountBuildMenu();
+            this._ui.unmountControl(this._menu);
         }
     }
     
-    private toggleLightMode(){
-        this.lightMode = !this.lightMode;
 
-        if(this.lightMode) {
-            if(this.buildingMode){
-                this._ui.unmountBuildMenu();
-                this.buildingObject.dispose()
-            }
-
-            this.buildingMode = false
-        }
-        this.updateUI();
-        if(this.lightMode){
-            this.initLight();
-            
-        }
-    }
     public changeCollection(id){
         console.log("Change collection: ", id)
         this._currentCollection = this._modelCollections.filter((a) => a._id == id)[0];
         this._activeModel = 0;
-        this._models = this._currentCollection.items;
+        //this._models = this._currentCollection.items;
         this.deinitBuildingModel()
         this.initBuildingModel();
         
-        console.log(this._models, this._currentCollection)
-        this.updateUI()
     }
 
-    public placeModel(cid, pos, rot, scale){
-    
-    }
-    
-    private updateUI(){
-        if(this.buildingMode && this._activeModel && this._models.length > 0){
-            this._ui._clockTime.text = this.buildingMode ? "Build Mode: " + this._models[this._activeModel].name : "";
-
-        }else if(this.lightMode){
-            this._ui._clockTime.text = "Light Mode"
-        }else{
-            this._ui._clockTime.text = ""
-        }
-    
-    }
 
     private pickVec(){
         let pickedPoint = this._scene.pick(this._mouseX, this._mouseY);
 
-        if(pickedPoint.hit){
-            return new Vector3(pickedPoint.pickedPoint.x, this._currentHeight * this._currentScale, pickedPoint.pickedPoint.z)
+        if(pickedPoint && pickedPoint.hit){
+            let x = parseInt(pickedPoint.pickedPoint.x.toFixed(0))
+            let z = parseInt(pickedPoint.pickedPoint.z.toFixed(0))
+            return new Vector3(x, this._currentHeight * this._currentScale, z)
+        }else{
+            return Vector3.Zero()
         }
     }
 
@@ -269,18 +250,19 @@ export class Builder {
         console.log("ADD LIGHT")
         this.light = new PointLight("new-point", this.pickVec(), this._scene);
         this.light.intensity = this._currentScale;
-        this.light.diffuse = new Color3(1, 0, 1);
-        this.light.specular = new Color3(1, 0, 1);
+        this.light.diffuse = new Color3(1, 1, 1);
+        this.light.specular = new Color3(0, 0, 1);
 
         this._scene.addLight(this.light)
     }
     
     private initBuildingModel() {
         let vec = this.pickVec();
-        if(vec){
-
+        if(!vec){
+            vec = Vector3.Zero()
+        }
         
-        this._modelEngine.instanceModel(this._models[this._activeModel].ipfs, (err, model) => {
+        this._modelEngine.instanceModel(this._activeModel.ipfs, (err, model) => {
 
         this.buildingObject = new Model(model);
 
@@ -290,7 +272,22 @@ export class Builder {
           this.buildingObject.addToScene(this._scene);
         })
         //this._ipfsModelLoader.getModel(null, this._models[this._activeModel].ipfs, this._scene, new Vector3(pickedPoint.pickedPoint.x, 0, pickedPoint.pickedPoint.z), 3);
+        
+    }
+
+    private initSpeaker(){
+        let vec = this.pickVec()
+        if(!vec){
+            vec = Vector3.Zero()
         }
+
+        this.speakerObject = new Speaker(this._scene, this._modelEngine)
+        this._scene.addTransformNode(this.speakerObject)
+    }
+
+    private deinitSpeaker(){
+        this.speakerObject.dispose()
+        this.speakerObject = null
     }
     
       private deinitBuildingModel(){

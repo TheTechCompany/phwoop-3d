@@ -17,20 +17,19 @@ import {
   HemisphericLight, 
   Mesh, 
   MeshBuilder, DirectionalLight, Sound } from "@babylonjs/core";
-  import {HexTile} from './hex';
-import { Player } from './characterController';
-import { Environment } from './environment';
+  import {HexTile} from './base/hex';
+import { Environment } from './base/environment';
 import { Hud } from "./ui";
-import { Character } from "./character";
+import { Character } from "./base/character";
 import IPFS from 'ipfs';
-import { IPFSModelLoader } from "./ipfsModel";
+import { IPFSModelLoader } from "./base/ipfsModel";
 import { CharacterSelector } from "./signup/characterSelector";
 import { getCollections, getModels } from './api/modelCollections';
 import BaseEngine from "./base/engine";
 import { ModelEngine } from "./models/modelengine";
 import { addModelToPrefab, getPrefab } from './api/prefabActions';
 import Prefab from './base/prefab';
-import { Builder } from "./models/builder";
+import { Builder } from "./builder/builder";
 
 enum State { START = 0, GAME = 1, LOSE = 2, CUTSCENE = 3 };
 
@@ -155,14 +154,7 @@ class App{
     
     await this._initPlayer(scene)
 
-    let music = new Sound("kereru", "kereru.mp3", this._scene, null, {
-      loop: true,
-      autoplay: true,
-      spatialSound: true,
-      distanceModel: "exponential",
-      rolloffFactor: 1,
-      maxDistance: 26    
-    })
+
     this._engine.hideLoadingUI()
     this._baseEngine.mount();
    
@@ -188,17 +180,17 @@ class App{
       
       const characterUrl = await ipfs.getIPFSModel(cid)
 
-      const outer = MeshBuilder.CreateBox("outer", {width: 0.5, depth: 0.5, height: 2}, scene)
+      const outer = MeshBuilder.CreateBox("outer", {width: 0.5, depth: 0.5, height: 1.5}, scene)
       //outer.isVisible = false;
       outer.isPickable = false;
       outer.checkCollisions = true;
 
-      outer.bakeTransformIntoVertices(Matrix.Translation(0.5, 2, 0.5))
+      outer.bakeTransformIntoVertices(Matrix.Translation(0.5, 1.5, 0.5))
 
-      outer.position = new Vector3(3, 3, 0);
+      outer.position = new Vector3(3, 3, 3);
 
-      outer.ellipsoid = new Vector3(0.5, 2, 0.5);
-      outer.ellipsoidOffset = new Vector3(0, 0.9, 0);
+      outer.ellipsoid = new Vector3(0.3, 1, 0.3);
+      outer.ellipsoidOffset = new Vector3(0, 1, 0);
 
       outer.rotationQuaternion = new Quaternion(0, 1, 0, 0);
       
@@ -206,19 +198,28 @@ class App{
         const player = result.meshes[0];
         const skeleton = result.skeletons[0];
         
+        let childMesh = player.getChildMeshes()
+        for(var i = 0; i < childMesh.length; i++){
+          childMesh[i].isPickable = false;
+        }
+        //childMesh.map((x) => x.isPickable = false)
         //player.scaling = new Vector3(1.5, 1.5, 1.5);
 
         player.skeleton = skeleton
         skeleton.enableBlending(0.1);
-        player.parent = outer;
+        //player.parent = outer;
+        player.normalizeToUnitCube()
+        player.scaling.scaleInPlace(1.5)
+
         player.isPickable = false;
-        player.position = new Vector3(0, 0, 0);
-        player.checkCollisions = true;
-        player.ellipsoid = new Vector3(0.5, 2, 0.5);
+        player.position = new Vector3(3, 10, 3);
+        player.ellipsoid = new Vector3(0.3, 0.9, 0.3);
         player.ellipsoidOffset = new Vector3(0, 0.9, 0);
+        player.checkCollisions = true;
+
   
         return {
-          mesh: outer as Mesh,
+          mesh: player,
           animationGroups: result.animationGroups
         }
       })
