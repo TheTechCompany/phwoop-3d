@@ -70,10 +70,15 @@ export default class BuildMenu extends ScrollViewer{
             
         }
 
+        let listScroll = new ScrollViewer(null, false)
+        listScroll.width = 1
+        listScroll.height = 1
+
         if(this._listGrid) this._listGrid.dispose()
         this._listGrid = new Grid();
+        this._listGrid.heightInPixels = 1600
         for(var i = 0; i < list.length; i++){
-            this._listGrid.addRowDefinition(60, true)
+            this._listGrid.addRowDefinition(30, true)
 
             let button = Button.CreateSimpleButton(list[i]._id, list[i].name)
             button.background = "#dfdfdf";
@@ -95,7 +100,9 @@ export default class BuildMenu extends ScrollViewer{
             //panel.addControl(button)
             this._listGrid.addControl(button, i+1, 0)
         }
-        this._mainGrid.addControl(this._listGrid, 1, 0)
+    
+        listScroll.addControl(this._listGrid)
+        this._mainGrid.addControl(listScroll, 1, 0)
     }
 
     private _setupContent(item){

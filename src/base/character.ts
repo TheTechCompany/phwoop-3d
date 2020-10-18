@@ -92,7 +92,7 @@ export class Character{
         this._controller.setSlopeLimit(30, 60);
 
 
-        this._controller.start()
+     this._controller.start()
     }
 
    

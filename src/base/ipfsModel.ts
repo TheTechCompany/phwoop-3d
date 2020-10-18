@@ -62,9 +62,11 @@ export class IPFSModelLoader{
         
         let url = await this.getIPFSModel(cid);
         SceneLoader.ImportMesh(null, "", url, scene, (meshes, particles, skeletons, animationGroups) => {
+
+            if(animationGroups) animationGroups.map((x) => x.play())
             let mesh = meshes[0];
             
-            mesh.isVisible = false;
+            mesh.isVisible = true;
             mesh.isPickable = false;
             mesh.checkCollisions = checkCollisions;
             mesh.normalizeToUnitCube()
@@ -78,9 +80,7 @@ export class IPFSModelLoader{
                 if(children[i].material){
                     children[i].material.sideOrientation = 0
                     children[i].material.backFaceCulling = false;
-                    console.log(children[i])
                 }else{
-                    console.log("No material for mesh", children[i])
                 }
 
                 children[i].isPickable = false;
@@ -88,10 +88,7 @@ export class IPFSModelLoader{
                 children[i].checkCollisions = checkCollisions
             }
             cb(null, mesh)
-        }, (e) => {
-            //onProgress
-            console.log(e)
-        }, null, ".glb")
+        }, null, null, ".glb")
      
     }
 }

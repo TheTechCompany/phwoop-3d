@@ -30,6 +30,7 @@ import { ModelEngine } from "./models/modelengine";
 import { addModelToPrefab, getPrefab } from './api/prefabActions';
 import Prefab from './base/prefab';
 import { Builder } from "./builder/builder";
+import Drone from './builder/drone';
 
 const WORLD = require('./worlds/temple')
 
@@ -152,6 +153,7 @@ class App{
 
     this._builder = new Builder(this._scene, this._modelEngine)
   
+    new Drone(this._scene, this._modelEngine)
     await this._loadCharacterAssets(scene, this.characterCid);
     
     await this._initPlayer(scene)

@@ -15,7 +15,7 @@ export class ModelEngine{
 
     public async instanceModel(cid, cb, checkCollisions?: boolean){
         console.log("Instancing Model: "+ cid)
-        await this.loadModel(cid, (err, mesh) => {
+        await this.loadModel(cid, (err, mesh, animation) => {
             let d = new Date();
             mesh.isVisible = false;
             mesh.isPickable = false;
@@ -25,13 +25,12 @@ export class ModelEngine{
 
             let newMesh : Mesh = mesh.clone()
             newMesh.isPickable = false
-            
+            if(mesh.skeleton) newMesh.skeleton = mesh.skeleton.clone("clonedSkeleton")
             cb(null, newMesh)
         }, checkCollisions)
     }
 
     public async loadModel(cid, cb, checkCollisions?: boolean){
-        console.log("Loading Model: " + cid)
         if(!this._models[cid]){
             this._ipfs.getModel(cid, this._scene, (err, mesh) => {
                 this._models[cid] = mesh;
