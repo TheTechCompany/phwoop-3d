@@ -1,15 +1,17 @@
-import { Color3, Mesh, MeshBuilder, Scene, StandardMaterial, Vector3 } from "@babylonjs/core";
+import { Color3, Material, Texture, Mesh, MeshBuilder, Scene, StandardMaterial, Vector3 } from "@babylonjs/core";
 
 export class HexTile{
     private _scene : Scene;
     public _hex: Mesh;
     private _x : number;
     private _y : number;
+    private _texture: Material;
     
-    constructor(scene: Scene, size: number, x: number, y: number){
+    constructor(scene: Scene, size: number, x: number, y: number, texture: Material){
         this._scene = scene;
         this._x = x;
         this._y = y;
+        this._texture = texture;
         this.makeHex(size)
     }
 
@@ -39,22 +41,21 @@ export class HexTile{
         let x = this._x * (height * (3/4))
         let y = this._y * width
 
-        let material = new StandardMaterial("Hex", this._scene)
-        material.specularPower = 0;
-        if(this._x % 2 == 0){
+    
+
+         if(this._x % 2 == 0){
             y =  y - ((Math.sqrt(3) * size) / 2);
-            material.diffuseColor = Color3.Purple();
-            this._hex.material = material;
+           // material.diffuseColor = Color3.Purple();
         }else{
-            material.diffuseColor = Color3.Green();
-            this._hex.material = material;
+         //   material.diffuseColor = Color3.Green();
         }
+
+        this._hex.material = this._texture; 
+
         this._hex.position = new Vector3(x, 0, y)
         this._hex.isPickable = true;
         this._hex.freezeWorldMatrix();
-        //Mesh.CreatePolygon("hex", corners, this._scene)
-
-        //MeshBuilder.CreateBox("box", {depth: 24, width: 24, height: 0.2}, this._scene)
+  
     }
 
 

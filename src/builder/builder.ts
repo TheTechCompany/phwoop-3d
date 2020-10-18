@@ -31,7 +31,7 @@ export class Builder {
     private _currentRotation = 0;
 
     private _heightStep = 1;
-    private _rotationStep = 60; //Hexagon angles
+    private _rotationStep = 10; //Hexagon angles
     private _scaleStep = 1;
 
     private buildingObject: Model;
@@ -238,8 +238,8 @@ export class Builder {
         let pickedPoint = this._scene.pick(this._mouseX, this._mouseY);
 
         if(pickedPoint && pickedPoint.hit){
-            let x = parseInt(pickedPoint.pickedPoint.x.toFixed(0))
-            let z = parseInt(pickedPoint.pickedPoint.z.toFixed(0))
+            let x = parseInt(pickedPoint.pickedPoint.x.toFixed(1))
+            let z = parseInt(pickedPoint.pickedPoint.z.toFixed(1))
             return new Vector3(x, this._currentHeight * this._currentScale, z)
         }else{
             return Vector3.Zero()

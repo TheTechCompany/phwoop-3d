@@ -31,6 +31,8 @@ import { addModelToPrefab, getPrefab } from './api/prefabActions';
 import Prefab from './base/prefab';
 import { Builder } from "./builder/builder";
 
+const WORLD = require('./worlds/temple')
+
 enum State { START = 0, GAME = 1, LOSE = 2, CUTSCENE = 3 };
 
 class App{
@@ -109,7 +111,7 @@ class App{
     camera.attachControl(this._canvas, true);
 
     //Setup action
-    const environment = new Environment(this._scene, 12, 12)
+    const environment = new Environment(this._scene, 5, 5, WORLD.environment.map)
     this._enviroment = environment;
     await this._enviroment.load();
  

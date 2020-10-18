@@ -85,7 +85,7 @@ export class Character{
 
         this._controller.setCameraTarget(new Vector3(0, 1, 0));
         this._controller.setWalkSpeed(7);
-        this._controller.setRunSpeed(20)
+        this._controller.setRunSpeed(14)
         this._controller.setNoFirstPerson(false);
         
         this._controller.setStepOffset(0.4);
